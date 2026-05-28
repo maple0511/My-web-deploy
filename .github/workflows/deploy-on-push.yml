@@ -1,14 +1,23 @@
 name: deploy on push
-
-on: [push]
-
+on:
+  push:
+    branches:
+      - main
 jobs:
   deploy-app:
     runs-on: ubuntu-latest
-
     steps:
       - name: check out the code to build server
         uses: actions/checkout@v4
+
+      - name: set the ubuntu user as the owner of the /var/www/html directory
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.SSH_USER_NAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            sudo chown -R ubuntu /var/www/html
 
       - name: copy file to server
         uses: appleboy/scp-action@master
@@ -20,3 +29,12 @@ jobs:
           source: "./html/*"
           target: "/var/www/html"
           strip_components: 1
+
+      - name: set the root user back as the owner of the /var/www/html directory
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.SSH_USER_NAME }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            sudo chown -R root /var/www/html
